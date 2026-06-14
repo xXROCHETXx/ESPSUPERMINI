@@ -82,6 +82,8 @@ fisicamente y no corregirse en el bot hasta observar el panel real.
 - En Render, usar `RENDER_EXTERNAL_URL` automaticamente como base del webhook.
 - Normalizar `TELEGRAM_WEBHOOK_SECRET` con SHA-256 antes de pasarlo a Telegram;
   `generateValue` de Render puede incluir caracteres no admitidos.
+- Para `edit_message_media`, pasar los bytes a `InputMediaPhoto` con `filename`
+  y dejar que PTB genere el adjunto multipart `attach://`.
 - El original nunca se sube a GitHub.
 - No agregar OpenCV/NumPy/Tkinter sin una necesidad demostrada.
 

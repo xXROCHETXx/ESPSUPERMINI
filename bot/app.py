@@ -8,8 +8,6 @@ from io import BytesIO
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    InputFile,
-    InputMediaPhoto,
     Message,
     Update,
 )
@@ -25,6 +23,7 @@ from telegram.ext import (
 from .github_store import GitHubConfig, GitHubStore
 from .image_pipeline import ProcessedImage, load_source, process_image
 from .state import Action, EditState, Preset, apply_action, decode_callback, encode_callback
+from .telegram_media import preview_photo
 from .webhook import normalize_webhook_secret
 
 
@@ -191,11 +190,9 @@ async def handle_callback(
         else:
             keyboard = _main_keyboard(updated_state)
 
-        preview = BytesIO(processed.preview_png)
-        preview.name = "preview.png"
-        media = InputMediaPhoto(
-            media=InputFile(preview, filename="preview.png"),
-            caption=_caption(updated_state, processed),
+        media = preview_photo(
+            processed.preview_png,
+            _caption(updated_state, processed),
         )
         await query.edit_message_media(media=media, reply_markup=keyboard)
     except Exception as error:
