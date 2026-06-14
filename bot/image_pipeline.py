@@ -42,12 +42,7 @@ def process_image(source: Image.Image, state: EditState) -> ProcessedImage:
     image = _crop_and_resize(source, state)
     image = _apply_filters(image, state)
 
-    red_coverage = (
-        _measure_red_coverage(image, state.red_sensitivity)
-        if state.preset != Preset.PHOTO_BW
-        else [0.0] * (WIDTH * HEIGHT)
-    )
-    classes = _quantize(image, red_coverage, state)
+    classes = _quantize(image, state)
     black_plane, red_plane, black_pixels, red_pixels = _pack_planes(
         classes,
         include_red=state.preset != Preset.PHOTO_BW,
@@ -114,152 +109,105 @@ def _apply_filters(image: Image.Image, state: EditState) -> Image.Image:
     return ImageEnhance.Contrast(image).enhance(contrast_factor)
 
 
-def _measure_red_coverage(image: Image.Image, sensitivity: int) -> list[float]:
-    sensitivity = max(0, min(10, sensitivity))
-    hsv_pixels = list(image.convert("HSV").getdata())
-    rgb_pixels = list(image.getdata())
-    hue_span = 5.0 + sensitivity
-    minimum_saturation = 180 - sensitivity * 13
-    minimum_value = 35
-    minimum_chroma = 70 - sensitivity * 6
-
-    coverage: list[float] = []
-    for (hue, saturation, value), (red, green, blue) in zip(
-        hsv_pixels, rgb_pixels, strict=True
-    ):
-        hue_distance = float(min(hue, 256 - hue))
-        chroma = red - max(green, blue)
-        if (
-            hue_distance > hue_span
-            or saturation < minimum_saturation
-            or value < minimum_value
-            or chroma < minimum_chroma
-        ):
-            coverage.append(0.0)
-            continue
-
-        # Hue confidence prevents orange wood and skin from becoming solid red.
-        # Chroma becomes ink coverage, so dark or muted reds are rendered as a
-        # red/black or red/white dot pattern instead of a flat red region.
-        hue_confidence = 1.0 - (hue_distance / hue_span) ** 1.5
-        red_amount = min(1.0, chroma / 210.0)
-        coverage.append(max(0.0, min(1.0, red_amount * hue_confidence)))
-
-    cleaned = coverage.copy()
-    for y in range(HEIGHT):
-        for x in range(WIDTH):
-            index = y * WIDTH + x
-            if coverage[index] == 0.0:
-                continue
-            neighbours = 0
-            for near_y in range(max(0, y - 1), min(HEIGHT, y + 2)):
-                for near_x in range(max(0, x - 1), min(WIDTH, x + 2)):
-                    if near_x == x and near_y == y:
-                        continue
-                    if coverage[near_y * WIDTH + near_x] > 0.0:
-                        neighbours += 1
-            if neighbours == 0:
-                cleaned[index] = 0.0
-    return cleaned
+def _quantize(image: Image.Image, state: EditState) -> bytearray:
+    if state.preset == Preset.PHOTO_BW:
+        return _quantize_bw(image, state)
+    return _quantize_bwr(image, state)
 
 
-def _quantize(
-    image: Image.Image,
-    red_coverage: list[float],
-    state: EditState,
-) -> bytearray:
+def _quantize_bw(image: Image.Image, state: EditState) -> bytearray:
     luminance = [float(value) for value in image.convert("L").getdata()]
     classes = bytearray(WIDTH * HEIGHT)
-    dither_strength = 0.0 if state.preset == Preset.TEXT_LOGO else state.dither / 10.0
-    threshold = 145.0 if state.preset == Preset.TEXT_LOGO else 128.0
-    red_mask = _dither_red(red_coverage, dither_strength)
+    dither_strength = state.dither / 10.0
 
     for y in range(HEIGHT):
         for x in range(WIDTH):
             index = y * WIDTH + x
-            if red_mask[index]:
-                classes[index] = RED
-                continue
-
             old_value = max(0.0, min(255.0, luminance[index]))
-            new_value = 255.0 if old_value >= threshold else 0.0
+            new_value = 255.0 if old_value >= 128.0 else 0.0
             classes[index] = WHITE if new_value == 255.0 else BLACK
             error = (old_value - new_value) * dither_strength
             if error == 0.0:
                 continue
-            _diffuse(
-                luminance,
-                red_mask,
-                x + 1,
-                y,
-                error * 7.0 / 16.0,
-                diffuse_when=False,
-            )
-            _diffuse(
-                luminance,
-                red_mask,
-                x - 1,
-                y + 1,
-                error * 3.0 / 16.0,
-                diffuse_when=False,
-            )
-            _diffuse(
-                luminance,
-                red_mask,
-                x,
-                y + 1,
-                error * 5.0 / 16.0,
-                diffuse_when=False,
-            )
-            _diffuse(
-                luminance,
-                red_mask,
-                x + 1,
-                y + 1,
-                error * 1.0 / 16.0,
-                diffuse_when=False,
-            )
+            _diffuse_scalar(luminance, x + 1, y, error * 7.0 / 16.0)
+            _diffuse_scalar(luminance, x - 1, y + 1, error * 3.0 / 16.0)
+            _diffuse_scalar(luminance, x, y + 1, error * 5.0 / 16.0)
+            _diffuse_scalar(luminance, x + 1, y + 1, error * 1.0 / 16.0)
     return classes
 
 
-def _dither_red(red_coverage: list[float], dither_strength: float) -> list[bool]:
-    values = [coverage * 255.0 for coverage in red_coverage]
-    support = [coverage > 0.0 for coverage in red_coverage]
-    selected = [False] * (WIDTH * HEIGHT)
+def _quantize_bwr(image: Image.Image, state: EditState) -> bytearray:
+    pixels = [
+        [float(red), float(green), float(blue)]
+        for red, green, blue in image.getdata()
+    ]
+    classes = bytearray(WIDTH * HEIGHT)
+    dither_strength = (
+        0.0 if state.preset == Preset.TEXT_LOGO else state.dither / 10.0
+    )
+    red_distance_bias = 2.0 ** ((5 - state.red_sensitivity) / 10.0)
+    palette = (
+        (WHITE, (255.0, 255.0, 255.0)),
+        (BLACK, (0.0, 0.0, 0.0)),
+        (RED, (255.0, 0.0, 0.0)),
+    )
 
     for y in range(HEIGHT):
         for x in range(WIDTH):
             index = y * WIDTH + x
-            if not support[index]:
+            old_red, old_green, old_blue = pixels[index]
+            selected_class = WHITE
+            selected_colour = palette[0][1]
+            selected_distance = float("inf")
+
+            for colour_class, colour in palette:
+                distance = (
+                    (old_red - colour[0]) ** 2
+                    + (old_green - colour[1]) ** 2
+                    + (old_blue - colour[2]) ** 2
+                )
+                if colour_class == RED:
+                    distance *= red_distance_bias
+                if distance < selected_distance:
+                    selected_class = colour_class
+                    selected_colour = colour
+                    selected_distance = distance
+
+            classes[index] = selected_class
+            if dither_strength == 0.0:
                 continue
 
-            old_value = max(0.0, min(255.0, values[index]))
-            new_value = 255.0 if old_value >= 128.0 else 0.0
-            selected[index] = new_value == 255.0
-            error = (old_value - new_value) * dither_strength
-            if error == 0.0:
-                continue
-            _diffuse(values, support, x + 1, y, error * 7.0 / 16.0)
-            _diffuse(values, support, x - 1, y + 1, error * 3.0 / 16.0)
-            _diffuse(values, support, x, y + 1, error * 5.0 / 16.0)
-            _diffuse(values, support, x + 1, y + 1, error * 1.0 / 16.0)
-    return selected
+            error = (
+                (old_red - selected_colour[0]) * dither_strength,
+                (old_green - selected_colour[1]) * dither_strength,
+                (old_blue - selected_colour[2]) * dither_strength,
+            )
+            _diffuse_rgb(pixels, x + 1, y, error, 7.0 / 16.0)
+            _diffuse_rgb(pixels, x - 1, y + 1, error, 3.0 / 16.0)
+            _diffuse_rgb(pixels, x, y + 1, error, 5.0 / 16.0)
+            _diffuse_rgb(pixels, x + 1, y + 1, error, 1.0 / 16.0)
+    return classes
 
 
-def _diffuse(
-    values: list[float],
-    excluded_or_supported: list[bool],
+def _diffuse_scalar(values: list[float], x: int, y: int, error: float) -> None:
+    if x < 0 or x >= WIDTH or y < 0 or y >= HEIGHT:
+        return
+    values[y * WIDTH + x] += error
+
+
+def _diffuse_rgb(
+    pixels: list[list[float]],
     x: int,
     y: int,
-    error: float,
-    *,
-    diffuse_when: bool = True,
+    error: tuple[float, float, float],
+    weight: float,
 ) -> None:
     if x < 0 or x >= WIDTH or y < 0 or y >= HEIGHT:
         return
-    index = y * WIDTH + x
-    if excluded_or_supported[index] == diffuse_when:
-        values[index] += error
+    pixel = pixels[y * WIDTH + x]
+    pixel[0] += error[0] * weight
+    pixel[1] += error[1] * weight
+    pixel[2] += error[2] * weight
 
 
 def _pack_planes(

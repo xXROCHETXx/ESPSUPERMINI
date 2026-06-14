@@ -64,7 +64,7 @@ class EditState:
             return cls(preset=preset, contrast=1, dither=8, red_sensitivity=0)
         if preset == Preset.TEXT_LOGO:
             return cls(preset=preset, contrast=4, dither=0, red_sensitivity=6)
-        return cls(preset=preset, contrast=1, dither=8, red_sensitivity=5)
+        return cls(preset=preset, contrast=0, dither=10, red_sensitivity=5)
 
     def with_preset(self, preset: Preset) -> "EditState":
         defaults = self.defaults(preset)
@@ -188,4 +188,3 @@ def apply_action(action: Action, state: EditState) -> EditState:
     if action == Action.RESET_TONE:
         return state.reset_tone()
     return state
-

@@ -40,6 +40,14 @@ def test_preset_change_preserves_crop_and_resets_tone() -> None:
     assert updated.red_sensitivity == 0
 
 
+def test_bwr_defaults_match_reference_three_colour_dithering() -> None:
+    state = EditState.defaults(Preset.PHOTO_BWR)
+
+    assert state.contrast == 0
+    assert state.dither == 10
+    assert state.red_sensitivity == 5
+
+
 def test_adjustments_are_clamped() -> None:
     state = EditState.defaults(Preset.PHOTO_BWR)
     for _ in range(20):
@@ -47,4 +55,3 @@ def test_adjustments_are_clamped() -> None:
         state = apply_action(Action.RED_UP, state)
     assert state.zoom == 10
     assert state.red_sensitivity == 10
-

@@ -39,12 +39,12 @@ def test_bw_output_omits_red_plane() -> None:
 
 
 def test_bwr_detects_red_and_never_overlaps_planes() -> None:
-    source = Image.new("RGB", (WIDTH, HEIGHT), (230, 20, 20))
+    source = Image.new("RGB", (WIDTH, HEIGHT), (255, 0, 0))
     result = process_image(source, EditState.defaults(Preset.PHOTO_BWR))
     parsed = parse_epd(result.epd_data)
 
     assert parsed.mode == Mode.BWR
-    assert result.red_pixels > WIDTH * HEIGHT * 0.95
+    assert result.red_pixels == WIDTH * HEIGHT
     assert parsed.red_plane is not None
     for black, red in zip(parsed.black_plane, parsed.red_plane, strict=True):
         assert not (((~black) & 0xFF) & ((~red) & 0xFF))
@@ -81,11 +81,12 @@ def test_red_sensitivity_changes_muted_red_result() -> None:
     assert high.red_pixels > low.red_pixels
 
 
-def test_warm_wood_and_skin_tones_do_not_flood_red() -> None:
+def test_warm_skin_tone_uses_red_as_a_third_visual_tone() -> None:
     source = Image.new("RGB", (WIDTH, HEIGHT), (175, 95, 45))
     result = process_image(source, EditState.defaults(Preset.PHOTO_BWR))
 
-    assert result.red_pixels < WIDTH * HEIGHT * 0.01
+    assert result.red_pixels > WIDTH * HEIGHT * 0.15
+    assert result.black_pixels > WIDTH * HEIGHT * 0.05
 
 
 def test_dark_red_uses_red_and_black_as_a_visual_shade() -> None:
@@ -94,6 +95,13 @@ def test_dark_red_uses_red_and_black_as_a_visual_shade() -> None:
 
     assert WIDTH * HEIGHT * 0.25 < result.red_pixels < WIDTH * HEIGHT * 0.75
     assert result.black_pixels > WIDTH * HEIGHT * 0.20
+
+
+def test_neutral_gray_does_not_need_red_ink() -> None:
+    source = Image.new("RGB", (WIDTH, HEIGHT), (128, 128, 128))
+    result = process_image(source, EditState.defaults(Preset.PHOTO_BWR))
+
+    assert result.red_pixels < WIDTH * HEIGHT * 0.01
 
 
 def test_exif_orientation_is_applied() -> None:

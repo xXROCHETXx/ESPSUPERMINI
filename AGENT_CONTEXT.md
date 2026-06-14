@@ -84,8 +84,10 @@ fisicamente y no corregirse en el bot hasta observar el panel real.
   `generateValue` de Render puede incluir caracteres no admitidos.
 - Para `edit_message_media`, pasar los bytes a `InputMediaPhoto` con `filename`
   y dejar que PTB genere el adjunto multipart `attach://`.
-- En BWR no existen tonos fisicos: simularlos variando cobertura de puntos
-  rojos. Mantener el hue estricto para excluir naranja, madera y piel.
+- Para fotos BWR, usar distancia RGB a blanco/negro/rojo y Floyd-Steinberg
+  vectorial. La piel calida debe poder usar rojo como tercer tono; sensibilidad
+  5 equivale a la cuantizacion sin sesgo de la app de Lory.
+- Defaults BWR de referencia: contraste 0, dithering 10, rojo 5.
 - El original nunca se sube a GitHub.
 - No agregar OpenCV/NumPy/Tkinter sin una necesidad demostrada.
 
