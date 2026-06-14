@@ -127,7 +127,8 @@ pixel, mientras el firmware asociado recibe 1 bit por pixel.
 
 - Telegram y Render estan activos; webhook sin errores.
 - GitHub Pages esta activo.
-- `current.epd` responde 404 hasta la primera publicacion desde Telegram.
+- Primera publicacion validada en commit `de4cff0`: `current.epd` responde 200,
+  mide 11.272 bytes y pasa parser/CRC como BWR.
 - Falta `include/secrets.h`; no contiene secretos en el repositorio.
 - Firmware compila localmente y las pruebas Python pasan.
 

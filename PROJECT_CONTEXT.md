@@ -304,8 +304,14 @@ Servicios configurados:
 
 Pendiente antes del hardware:
 
-- Pulsar `Publicar` en Telegram al menos una vez.
-- Confirmar que `current.epd` deja de responder 404 y validar tamano/cabecera.
 - Crear `include/secrets.h` con WiFi real y la URL final.
 - GitHub Actions sigue desactivado por el bloqueo de facturacion de la cuenta;
   las pruebas locales pasan y el firmware compila.
+
+Primera publicacion validada:
+
+- Commit `de4cff080453ee0669e8c29cd9019374f1279ff2`.
+- GitHub Pages responde 200 con `application/octet-stream`.
+- Archivo BWR de 11.272 bytes, dos planos de 5.624 bytes y CRC32 valido.
+- El 404 observado inmediatamente despues de publicar fue temporal mientras
+  Pages construia y propagaba el nuevo commit.
