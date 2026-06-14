@@ -148,11 +148,11 @@ def _quantize_bwr(image: Image.Image, state: EditState) -> bytearray:
         [float(red), float(green), float(blue)]
         for red, green, blue in image.getdata()
     ]
+    _adjust_red_sensitivity(pixels, state.red_sensitivity)
     classes = bytearray(WIDTH * HEIGHT)
     dither_strength = (
         0.0 if state.preset == Preset.TEXT_LOGO else state.dither / 10.0
     )
-    red_distance_bias = 2.0 ** ((5 - state.red_sensitivity) / 10.0)
     palette = (
         (WHITE, (255.0, 255.0, 255.0)),
         (BLACK, (0.0, 0.0, 0.0)),
@@ -173,8 +173,6 @@ def _quantize_bwr(image: Image.Image, state: EditState) -> bytearray:
                     + (old_green - colour[1]) ** 2
                     + (old_blue - colour[2]) ** 2
                 )
-                if colour_class == RED:
-                    distance *= red_distance_bias
                 if distance < selected_distance:
                     selected_class = colour_class
                     selected_colour = colour
@@ -194,6 +192,25 @@ def _quantize_bwr(image: Image.Image, state: EditState) -> bytearray:
             _diffuse_rgb(pixels, x, y + 1, error, 5.0 / 16.0)
             _diffuse_rgb(pixels, x + 1, y + 1, error, 1.0 / 16.0)
     return classes
+
+
+def _adjust_red_sensitivity(
+    pixels: list[list[float]],
+    sensitivity: int,
+) -> None:
+    delta = max(0, min(10, sensitivity)) - 5
+    if delta == 0:
+        return
+
+    red_shift = delta * 4.0
+    other_shift = delta * 2.0
+    for pixel in pixels:
+        red, green, blue = pixel
+        if red <= green or red <= blue:
+            continue
+        pixel[0] = max(0.0, min(255.0, red + red_shift))
+        pixel[1] = max(0.0, min(255.0, green - other_shift))
+        pixel[2] = max(0.0, min(255.0, blue - other_shift))
 
 
 def _diffuse_scalar(values: list[float], x: int, y: int, error: float) -> None:

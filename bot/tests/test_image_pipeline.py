@@ -81,6 +81,23 @@ def test_red_sensitivity_changes_muted_red_result() -> None:
     assert high.red_pixels > low.red_pixels
 
 
+def test_red_sensitivity_changes_skin_tone_gradually() -> None:
+    source = Image.new("RGB", (WIDTH, HEIGHT), (205, 145, 120))
+    counts = []
+    for sensitivity in range(5, 8):
+        state = EditState.defaults(Preset.PHOTO_BWR)
+        state = EditState(
+            **{**state.__dict__, "red_sensitivity": sensitivity}
+        )
+        counts.append(process_image(source, state).red_pixels)
+
+    assert counts == sorted(counts)
+    largest_step = max(
+        counts[index + 1] - counts[index] for index in range(len(counts) - 1)
+    )
+    assert largest_step < WIDTH * HEIGHT * 0.05
+
+
 def test_warm_skin_tone_uses_red_as_a_third_visual_tone() -> None:
     source = Image.new("RGB", (WIDTH, HEIGHT), (175, 95, 45))
     result = process_image(source, EditState.defaults(Preset.PHOTO_BWR))
@@ -134,6 +151,8 @@ def test_sharpness_increases_local_edge_contrast() -> None:
     )
 
     assert sharp_slope > soft_slope
+
+
 def test_exif_orientation_is_applied() -> None:
     source = Image.new("RGB", (40, 20), "white")
     exif = Image.Exif()

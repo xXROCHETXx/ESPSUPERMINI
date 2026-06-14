@@ -166,8 +166,10 @@ El conversor es propio y no depende de OpenCV ni NumPy:
   difusion Floyd-Steinberg por canal, siguiendo la intencion visual de Lory.
 - Esto usa rojo como tercer tono perceptual: piel y otros tonos calidos pueden
   convertirse en tramas rojo/blanco o rojo/negro.
-- La sensibilidad roja sesga la distancia a la entrada roja de la paleta; a
-  nivel 5 reproduce la seleccion por distancia RGB sin sesgo.
+- La sensibilidad roja ajusta gradualmente la calidez antes de cuantizar; a
+  nivel 5 reproduce la seleccion por distancia RGB sin modificar la imagen.
+- No multiplicar la distancia al rojo: provoca transiciones abruptas y manchas
+  solidas al pasar entre niveles consecutivos.
 - El preset Foto BWR parte con contraste 0, dithering 10 y rojo 5 para imitar
   los valores efectivos predeterminados de la app de escritorio.
 - Floyd-Steinberg para fotos.
