@@ -80,6 +80,8 @@ fisicamente y no corregirse en el bot hasta observar el panel real.
   Telegram.
 - Usuarios permitidos vienen de `ALLOWED_USER_IDS`.
 - En Render, usar `RENDER_EXTERNAL_URL` automaticamente como base del webhook.
+- Normalizar `TELEGRAM_WEBHOOK_SECRET` con SHA-256 antes de pasarlo a Telegram;
+  `generateValue` de Render puede incluir caracteres no admitidos.
 - El original nunca se sube a GitHub.
 - No agregar OpenCV/NumPy/Tkinter sin una necesidad demostrada.
 

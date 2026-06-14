@@ -55,7 +55,7 @@ Variables necesarias:
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Token entregado por BotFather |
 | `TELEGRAM_WEBHOOK_URL` | Opcional fuera de Render; Render aporta `RENDER_EXTERNAL_URL` |
-| `TELEGRAM_WEBHOOK_SECRET` | Secreto aleatorio para validar webhooks |
+| `TELEGRAM_WEBHOOK_SECRET` | Secreto aleatorio; el bot lo normaliza para Telegram |
 | `ALLOWED_USER_IDS` | IDs numericos separados por coma |
 | `GITHUB_TOKEN` | Token con permiso Contents: Read and write |
 | `GITHUB_REPOSITORY` | Repositorio `owner/name` |

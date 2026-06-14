@@ -88,6 +88,8 @@ Arquitectura:
 - Solo Telegram user IDs autorizados pueden preparar o publicar imagenes.
 - En Render, el webhook usa automaticamente la variable nativa
   `RENDER_EXTERNAL_URL`; no hay que adivinar la URL durante el primer deploy.
+- El secreto generado por Render se normaliza con SHA-256 porque Telegram solo
+  admite letras, numeros, guion y guion bajo en el token del webhook.
 
 Recursos creados:
 

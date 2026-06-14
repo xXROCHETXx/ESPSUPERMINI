@@ -8,8 +8,8 @@ venv/
 # Local credentials
 include/secrets.h
 .env
+PASTETEXT
 
 # Local bot artifacts
 bot/current.epd
 bot/*.png
-

@@ -25,6 +25,7 @@ from telegram.ext import (
 from .github_store import GitHubConfig, GitHubStore
 from .image_pipeline import ProcessedImage, load_source, process_image
 from .state import Action, EditState, Preset, apply_action, decode_callback, encode_callback
+from .webhook import normalize_webhook_secret
 
 
 LOGGER = logging.getLogger(__name__)
@@ -366,12 +367,15 @@ def main() -> None:
     ).rstrip("/")
     if webhook_base_url:
         webhook_path = os.environ.get("TELEGRAM_WEBHOOK_PATH", "telegram")
+        webhook_secret = normalize_webhook_secret(
+            _required_environment("TELEGRAM_WEBHOOK_SECRET")
+        )
         application.run_webhook(
             listen="0.0.0.0",
             port=int(os.environ.get("PORT", "10000")),
             url_path=webhook_path,
             webhook_url=f"{webhook_base_url}/{webhook_path}",
-            secret_token=_required_environment("TELEGRAM_WEBHOOK_SECRET"),
+            secret_token=webhook_secret,
             drop_pending_updates=True,
         )
     else:
