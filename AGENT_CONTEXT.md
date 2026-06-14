@@ -123,6 +123,14 @@ pixel, mientras el firmware asociado recibe 1 bit por pixel.
 - El panel BWR probablemente usa tiempos de refresco similares incluso en BW;
   BW ahorra descarga y RAM, no necesariamente energia del panel.
 
+## Estado de servicios
+
+- Telegram y Render estan activos; webhook sin errores.
+- GitHub Pages esta activo.
+- `current.epd` responde 404 hasta la primera publicacion desde Telegram.
+- Falta `include/secrets.h`; no contiene secretos en el repositorio.
+- Firmware compila localmente y las pruebas Python pasan.
+
 ## Proxima sesion recomendada
 
 1. Instalar Python 3.12 y PlatformIO.

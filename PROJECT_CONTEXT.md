@@ -288,16 +288,24 @@ Implementado en el workspace:
 Pendiente de hardware:
 
 - Confirmar pinout real y cableado EXT3.
-- Compilar/subir con PlatformIO instalado.
+- Subir el firmware al ESP32-S3.
 - Medir tiempo real de `flush()`.
 - Medir deep sleep, picos WiFi y consumo del regulador/LED.
 - Confirmar orientacion fisica de la pantalla.
 - Ajustar timeout y corrientes estimadas.
 
-Pendiente de servicios:
+Servicios configurados:
 
-- Crear bot con BotFather.
-- Configurar Render.
-- Crear token GitHub de alcance minimo.
-- Activar GitHub Pages desde `/docs`.
-- Configurar secretos y URL final.
+- Bot creado con BotFather y usuario autorizado.
+- Render activo con webhook de Telegram.
+- Token GitHub de alcance limitado configurado en Render.
+- GitHub Pages activo desde `/docs`.
+- URL final configurada en bot, Pages y ejemplo de firmware.
+
+Pendiente antes del hardware:
+
+- Pulsar `Publicar` en Telegram al menos una vez.
+- Confirmar que `current.epd` deja de responder 404 y validar tamano/cabecera.
+- Crear `include/secrets.h` con WiFi real y la URL final.
+- GitHub Actions sigue desactivado por el bloqueo de facturacion de la cuenta;
+  las pruebas locales pasan y el firmware compila.
