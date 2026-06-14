@@ -59,7 +59,7 @@ Variables necesarias:
 | `ALLOWED_USER_IDS` | IDs numericos separados por coma |
 | `GITHUB_TOKEN` | Token con permiso Contents: Read and write |
 | `GITHUB_REPOSITORY` | Repositorio `owner/name` |
-| `GITHUB_PATH` | Ruta, por defecto `docs/display/current.epd` |
+| `GITHUB_PATH` | Ruta: `docs/display/22a7a15a92a99aae4446f9d62b5f57dd/current.epd` |
 | `GITHUB_BRANCH` | Rama, por defecto `main` |
 | `PUBLIC_IMAGE_URL` | URL final de GitHub Pages, opcional |
 
@@ -102,4 +102,3 @@ el color. BW contiene solo negro; BWR contiene primero negro y despues rojo.
 
 Las corrientes y los pines siguen siendo estimaciones hasta realizar pruebas
 con la placa conectada.
-

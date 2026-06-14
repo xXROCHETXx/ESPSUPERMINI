@@ -21,7 +21,7 @@ services:
       - key: GITHUB_REPOSITORY
         sync: false
       - key: GITHUB_PATH
-        value: docs/display/current.epd
+        value: docs/display/22a7a15a92a99aae4446f9d62b5f57dd/current.epd
       - key: GITHUB_BRANCH
         value: main
       - key: PUBLIC_IMAGE_URL

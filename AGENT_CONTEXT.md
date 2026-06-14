@@ -60,7 +60,8 @@ fisicamente y no corregirse en el bot hasta observar el panel real.
 
 ## Red y seguridad
 
-- `current.epd` se sirve desde GitHub Pages.
+- `current.epd` se sirve desde GitHub Pages en
+  `docs/display/22a7a15a92a99aae4446f9d62b5f57dd/current.epd`.
 - El firmware usa TLS sin validar CA porque en el primer arranque aun no conoce
   la hora. CRC protege integridad accidental, no autenticidad.
 - La ruta publica debe ser dificil de adivinar.
@@ -111,4 +112,3 @@ pixel, mientras el firmware asociado recibe 1 bit por pixel.
 5. Corregir cualquier incompatibilidad de toolchain.
 6. Configurar bot, Pages y secretos.
 7. Probar con hardware y actualizar esta memoria con medidas reales.
-

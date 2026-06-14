@@ -81,7 +81,8 @@ Arquitectura:
 - Bot Python en Render Free.
 - Pillow para conversion.
 - `python-telegram-bot` para webhook y botones.
-- GitHub Contents API para sobrescribir `docs/display/current.epd`.
+- GitHub Contents API para sobrescribir
+  `docs/display/22a7a15a92a99aae4446f9d62b5f57dd/current.epd`.
 - GitHub Pages para servir el archivo sin depender del cold start de Render.
 - Sin base de datos.
 - Solo Telegram user IDs autorizados pueden preparar o publicar imagenes.
