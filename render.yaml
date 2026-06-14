@@ -10,8 +10,6 @@ services:
         value: 3.12.8
       - key: TELEGRAM_BOT_TOKEN
         sync: false
-      - key: TELEGRAM_WEBHOOK_URL
-        sync: false
       - key: TELEGRAM_WEBHOOK_SECRET
         generateValue: true
       - key: ALLOWED_USER_IDS

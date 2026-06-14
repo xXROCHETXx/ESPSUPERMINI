@@ -359,7 +359,11 @@ def main() -> None:
     application.add_handler(CallbackQueryHandler(handle_callback, pattern=r"^e1"))
     application.add_error_handler(error_handler)
 
-    webhook_base_url = os.environ.get("TELEGRAM_WEBHOOK_URL", "").rstrip("/")
+    webhook_base_url = (
+        os.environ.get("TELEGRAM_WEBHOOK_URL")
+        or os.environ.get("RENDER_EXTERNAL_URL")
+        or ""
+    ).rstrip("/")
     if webhook_base_url:
         webhook_path = os.environ.get("TELEGRAM_WEBHOOK_PATH", "telegram")
         application.run_webhook(

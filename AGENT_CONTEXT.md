@@ -79,6 +79,7 @@ fisicamente y no corregirse en el bot hasta observar el panel real.
 - Un callback tras cold start vuelve a descargar la foto original desde
   Telegram.
 - Usuarios permitidos vienen de `ALLOWED_USER_IDS`.
+- En Render, usar `RENDER_EXTERNAL_URL` automaticamente como base del webhook.
 - El original nunca se sube a GitHub.
 - No agregar OpenCV/NumPy/Tkinter sin una necesidad demostrada.
 

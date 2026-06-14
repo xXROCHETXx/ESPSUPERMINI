@@ -86,6 +86,8 @@ Arquitectura:
 - GitHub Pages para servir el archivo sin depender del cold start de Render.
 - Sin base de datos.
 - Solo Telegram user IDs autorizados pueden preparar o publicar imagenes.
+- En Render, el webhook usa automaticamente la variable nativa
+  `RENDER_EXTERNAL_URL`; no hay que adivinar la URL durante el primer deploy.
 
 Recursos creados:
 

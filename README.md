@@ -54,7 +54,7 @@ Variables necesarias:
 | Variable | Uso |
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Token entregado por BotFather |
-| `TELEGRAM_WEBHOOK_URL` | URL publica del servicio Render, sin slash final |
+| `TELEGRAM_WEBHOOK_URL` | Opcional fuera de Render; Render aporta `RENDER_EXTERNAL_URL` |
 | `TELEGRAM_WEBHOOK_SECRET` | Secreto aleatorio para validar webhooks |
 | `ALLOWED_USER_IDS` | IDs numericos separados por coma |
 | `GITHUB_TOKEN` | Token con permiso Contents: Read and write |
