@@ -6,11 +6,14 @@ import os
 from io import BytesIO
 
 from telegram import (
+    ForceReply,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
+    MessageEntity,
     Update,
 )
+from telegram.error import TelegramError
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -22,6 +25,13 @@ from telegram.ext import (
 
 from .github_store import GitHubConfig, GitHubStore
 from .image_pipeline import ProcessedImage, load_source, process_image
+from .manual_values import (
+    ManualSession,
+    decode_manual_session,
+    encode_manual_session,
+    manual_session_url,
+    parse_manual_values,
+)
 from .state import Action, EditState, Preset, apply_action, decode_callback, encode_callback
 from .telegram_media import preview_photo
 from .webhook import normalize_webhook_secret
@@ -55,6 +65,13 @@ STORE = GitHubStore(
 
 def _authorized(user_id: int | None) -> bool:
     return user_id is not None and user_id in ALLOWED_USERS
+
+
+def _manual_secret() -> str:
+    return (
+        os.environ.get("TELEGRAM_WEBHOOK_SECRET")
+        or _required_environment("TELEGRAM_BOT_TOKEN")
+    )
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -137,6 +154,25 @@ async def handle_callback(
         await query.edit_message_reply_markup(reply_markup=keyboard)
         return
 
+    if action == Action.MANUAL_VALUES:
+        original = _original_message(query.message)
+        if original is None or query.message is None:
+            await query.answer(
+                "No pude recuperar la foto original. Enviala nuevamente.",
+                show_alert=True,
+            )
+            return
+        session = ManualSession(
+            callback_data=encode_callback(Action.MANUAL_VALUES, state),
+            chat_id=query.message.chat_id,
+            preview_message_id=query.message.message_id,
+            file_id=_image_file_id(original),
+        )
+        session_url = encode_manual_session(session, _manual_secret())
+        await query.answer()
+        await _send_manual_prompt(query.message, session_url, state)
+        return
+
     await query.answer("Procesando...")
     original = _original_message(query.message)
     if original is None:
@@ -208,6 +244,64 @@ async def handle_callback(
         )
 
 
+async def receive_manual_values(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    message = update.effective_message
+    user = update.effective_user
+    if message is None or user is None or message.text is None:
+        return
+
+    prompt = message.reply_to_message
+    session_url = manual_session_url(prompt)
+    if session_url is None:
+        return
+    if not _authorized(user.id):
+        await message.reply_text("No tienes permiso para modificar esta pantalla.")
+        return
+
+    try:
+        session = decode_manual_session(session_url, _manual_secret())
+        if session.chat_id != message.chat_id:
+            raise ValueError("La solicitud pertenece a otro chat.")
+        action, state = decode_callback(session.callback_data)
+        if action != Action.MANUAL_VALUES:
+            raise ValueError("La solicitud manual no es valida.")
+    except ValueError:
+        await message.reply_text(
+            "Esta solicitud ya no es valida. Abre Valores manuales nuevamente."
+        )
+        return
+
+    try:
+        updated_state = parse_manual_values(message.text, state)
+    except ValueError as error:
+        await _send_manual_prompt(message, session_url, state, str(error))
+        return
+
+    try:
+        source_bytes = await _download_file_id(session.file_id, context)
+        processed = await asyncio.to_thread(
+            _process_bytes,
+            source_bytes,
+            updated_state,
+        )
+        await context.bot.edit_message_media(
+            chat_id=session.chat_id,
+            message_id=session.preview_message_id,
+            media=preview_photo(
+                processed.preview_png,
+                _caption(updated_state, processed),
+            ),
+            reply_markup=_tone_keyboard(updated_state),
+        )
+        await _delete_manual_messages(message, context)
+    except Exception as error:
+        LOGGER.exception("Manual value processing failed")
+        await message.reply_text(f"No pude aplicar esos valores: {error}")
+
+
 async def error_handler(
     update: object, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
@@ -221,19 +315,80 @@ def _process_bytes(source_bytes: bytes, state: EditState) -> ProcessedImage:
 async def _download_image(
     message: Message, context: ContextTypes.DEFAULT_TYPE
 ) -> bytes:
+    return await _download_file_id(_image_file_id(message), context)
+
+
+def _image_file_id(message: Message) -> str:
     if message.photo:
-        file_id = message.photo[-1].file_id
+        return message.photo[-1].file_id
     elif message.document and message.document.mime_type:
         if not message.document.mime_type.startswith("image/"):
             raise ValueError("El documento no es una imagen")
-        file_id = message.document.file_id
+        return message.document.file_id
     else:
         raise ValueError("No encontre una foto en el mensaje original")
 
+
+async def _download_file_id(
+    file_id: str,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> bytes:
     telegram_file = await context.bot.get_file(file_id)
     output = BytesIO()
     await telegram_file.download_to_memory(out=output)
     return output.getvalue()
+
+
+async def _send_manual_prompt(
+    reply_target: Message,
+    session_url: str,
+    state: EditState,
+    error: str | None = None,
+) -> None:
+    prefix = f"{error}\n\n" if error else ""
+    current_values = (
+        f"{state.brightness} {state.contrast} {state.dither} "
+        f"{state.sharpness} {state.red_sensitivity}"
+    )
+    text = (
+        f"{prefix}"
+        "Escribe 5 numeros separados por espacios:\n"
+        "brillo contraste trama nitidez rojo\n\n"
+        f"Valores actuales: {current_values}\n"
+        "Rangos: brillo -5..5, contraste -5..8, los demas 0..10.\n"
+        "Solicitud vinculada a esta foto."
+    )
+    link_text = "esta foto"
+    await reply_target.reply_text(
+        text,
+        entities=[
+            MessageEntity(
+                type=MessageEntity.TEXT_LINK,
+                offset=text.index(link_text),
+                length=len(link_text),
+                url=session_url,
+            )
+        ],
+        reply_markup=ForceReply(
+            selective=True,
+            input_field_placeholder=current_values,
+        ),
+        disable_web_page_preview=True,
+    )
+
+
+async def _delete_manual_messages(
+    message: Message,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    message_ids = [message.message_id]
+    if message.reply_to_message is not None:
+        message_ids.append(message.reply_to_message.message_id)
+    for message_id in message_ids:
+        try:
+            await context.bot.delete_message(message.chat_id, message_id)
+        except TelegramError:
+            LOGGER.debug("Could not delete manual input message %s", message_id)
 
 
 def _original_message(message: Message | None) -> Message | None:
@@ -311,6 +466,7 @@ def _tone_keyboard(state: EditState) -> InlineKeyboardMarkup:
             _button("Menos nitidez", Action.SHARPNESS_DOWN, state),
             _button("Mas nitidez", Action.SHARPNESS_UP, state),
         ],
+        [_button("Valores manuales", Action.MANUAL_VALUES, state)],
     ]
     if state.preset != Preset.PHOTO_BW:
         rows.append(
@@ -357,6 +513,9 @@ def main() -> None:
     )
     application = Application.builder().token(_required_environment("TELEGRAM_BOT_TOKEN")).build()
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, receive_manual_values)
+    )
     application.add_handler(
         MessageHandler(filters.PHOTO | filters.Document.IMAGE, receive_image)
     )

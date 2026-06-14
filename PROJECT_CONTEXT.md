@@ -147,11 +147,14 @@ Ajustes:
 - Intensidad de trama/dithering.
 - Sensibilidad al rojo.
 - Nitidez de 0 a 10.
+- Entrada manual en una linea: brillo, contraste, trama, nitidez y rojo.
 - Restablecer valores del preset.
 
 El estado completo cabe en menos de 64 bytes y se codifica dentro de cada
 `callback_data`. La previsualizacion responde a la foto original, por lo que un
 cold start puede recuperar el archivo desde Telegram sin almacenamiento local.
+La solicitud de valores manuales lleva una sesion firmada en una entidad de
+enlace: contiene `file_id`, estado, chat y mensaje de preview, sin base de datos.
 
 ## Conversion de imagen
 

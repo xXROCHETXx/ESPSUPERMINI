@@ -43,6 +43,7 @@ class Action(IntEnum):
     RESET_TONE = 38
     SHARPNESS_UP = 39
     SHARPNESS_DOWN = 40
+    MANUAL_VALUES = 41
 
 
 _CODEC_V1 = struct.Struct(">BBBBbbbbBB")

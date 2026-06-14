@@ -92,6 +92,8 @@ fisicamente y no corregirse en el bot hasta observar el panel real.
 - Defaults BWR de referencia: contraste 0, dithering 10, rojo 5.
 - Nitidez usa unsharp mask despues del filtro mediano y antes de cuantizar.
 - Callback v2 guarda nitidez; el decoder acepta callbacks v1 con nitidez 0.
+- Valores manuales usan ForceReply y una sesion HMAC autocontenida con file_id,
+  chat, preview y callback state. No guardar esta sesion en memoria de Render.
 - El original nunca se sube a GitHub.
 - No agregar OpenCV/NumPy/Tkinter sin una necesidad demostrada.
 
