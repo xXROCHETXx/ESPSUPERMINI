@@ -1,0 +1,15 @@
+.pio/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local credentials
+include/secrets.h
+.env
+
+# Local bot artifacts
+bot/current.epd
+bot/*.png
+

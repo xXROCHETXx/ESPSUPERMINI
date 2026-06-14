@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: esp-super-mini-epaper-bot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r bot/requirements.txt
+    startCommand: python -m bot.app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_URL
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: ALLOWED_USER_IDS
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPOSITORY
+        sync: false
+      - key: GITHUB_PATH
+        value: docs/display/current.epd
+      - key: GITHUB_BRANCH
+        value: main
+      - key: PUBLIC_IMAGE_URL
+        sync: false
