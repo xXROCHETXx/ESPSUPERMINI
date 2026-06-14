@@ -42,12 +42,12 @@ def process_image(source: Image.Image, state: EditState) -> ProcessedImage:
     image = _crop_and_resize(source, state)
     image = _apply_filters(image, state)
 
-    red_mask = (
-        _detect_red(image, state.red_sensitivity)
+    red_coverage = (
+        _measure_red_coverage(image, state.red_sensitivity)
         if state.preset != Preset.PHOTO_BW
-        else [False] * (WIDTH * HEIGHT)
+        else [0.0] * (WIDTH * HEIGHT)
     )
-    classes = _quantize(image, red_mask, state)
+    classes = _quantize(image, red_coverage, state)
     black_plane, red_plane, black_pixels, red_pixels = _pack_planes(
         classes,
         include_red=state.preset != Preset.PHOTO_BW,
@@ -114,51 +114,65 @@ def _apply_filters(image: Image.Image, state: EditState) -> Image.Image:
     return ImageEnhance.Contrast(image).enhance(contrast_factor)
 
 
-def _detect_red(image: Image.Image, sensitivity: int) -> list[bool]:
+def _measure_red_coverage(image: Image.Image, sensitivity: int) -> list[float]:
     sensitivity = max(0, min(10, sensitivity))
     hsv_pixels = list(image.convert("HSV").getdata())
     rgb_pixels = list(image.getdata())
-    hue_span = 10 + sensitivity * 2
-    minimum_saturation = 190 - sensitivity * 13
-    minimum_value = 45
-    dominance = 1.45 - sensitivity * 0.035
+    hue_span = 5.0 + sensitivity
+    minimum_saturation = 180 - sensitivity * 13
+    minimum_value = 35
+    minimum_chroma = 70 - sensitivity * 6
 
-    raw_mask: list[bool] = []
+    coverage: list[float] = []
     for (hue, saturation, value), (red, green, blue) in zip(
         hsv_pixels, rgb_pixels, strict=True
     ):
-        hue_is_red = hue <= hue_span or hue >= 255 - hue_span
-        dominant = red > green * dominance and red > blue * dominance
-        raw_mask.append(
-            hue_is_red
-            and saturation >= minimum_saturation
-            and value >= minimum_value
-            and dominant
-        )
+        hue_distance = float(min(hue, 256 - hue))
+        chroma = red - max(green, blue)
+        if (
+            hue_distance > hue_span
+            or saturation < minimum_saturation
+            or value < minimum_value
+            or chroma < minimum_chroma
+        ):
+            coverage.append(0.0)
+            continue
 
-    cleaned = raw_mask.copy()
+        # Hue confidence prevents orange wood and skin from becoming solid red.
+        # Chroma becomes ink coverage, so dark or muted reds are rendered as a
+        # red/black or red/white dot pattern instead of a flat red region.
+        hue_confidence = 1.0 - (hue_distance / hue_span) ** 1.5
+        red_amount = min(1.0, chroma / 210.0)
+        coverage.append(max(0.0, min(1.0, red_amount * hue_confidence)))
+
+    cleaned = coverage.copy()
     for y in range(HEIGHT):
         for x in range(WIDTH):
             index = y * WIDTH + x
-            if not raw_mask[index]:
+            if coverage[index] == 0.0:
                 continue
             neighbours = 0
             for near_y in range(max(0, y - 1), min(HEIGHT, y + 2)):
                 for near_x in range(max(0, x - 1), min(WIDTH, x + 2)):
                     if near_x == x and near_y == y:
                         continue
-                    if raw_mask[near_y * WIDTH + near_x]:
+                    if coverage[near_y * WIDTH + near_x] > 0.0:
                         neighbours += 1
             if neighbours == 0:
-                cleaned[index] = False
+                cleaned[index] = 0.0
     return cleaned
 
 
-def _quantize(image: Image.Image, red_mask: list[bool], state: EditState) -> bytearray:
+def _quantize(
+    image: Image.Image,
+    red_coverage: list[float],
+    state: EditState,
+) -> bytearray:
     luminance = [float(value) for value in image.convert("L").getdata()]
     classes = bytearray(WIDTH * HEIGHT)
     dither_strength = 0.0 if state.preset == Preset.TEXT_LOGO else state.dither / 10.0
     threshold = 145.0 if state.preset == Preset.TEXT_LOGO else 128.0
+    red_mask = _dither_red(red_coverage, dither_strength)
 
     for y in range(HEIGHT):
         for x in range(WIDTH):
@@ -173,25 +187,79 @@ def _quantize(image: Image.Image, red_mask: list[bool], state: EditState) -> byt
             error = (old_value - new_value) * dither_strength
             if error == 0.0:
                 continue
-            _diffuse(luminance, red_mask, x + 1, y, error * 7.0 / 16.0)
-            _diffuse(luminance, red_mask, x - 1, y + 1, error * 3.0 / 16.0)
-            _diffuse(luminance, red_mask, x, y + 1, error * 5.0 / 16.0)
-            _diffuse(luminance, red_mask, x + 1, y + 1, error * 1.0 / 16.0)
+            _diffuse(
+                luminance,
+                red_mask,
+                x + 1,
+                y,
+                error * 7.0 / 16.0,
+                diffuse_when=False,
+            )
+            _diffuse(
+                luminance,
+                red_mask,
+                x - 1,
+                y + 1,
+                error * 3.0 / 16.0,
+                diffuse_when=False,
+            )
+            _diffuse(
+                luminance,
+                red_mask,
+                x,
+                y + 1,
+                error * 5.0 / 16.0,
+                diffuse_when=False,
+            )
+            _diffuse(
+                luminance,
+                red_mask,
+                x + 1,
+                y + 1,
+                error * 1.0 / 16.0,
+                diffuse_when=False,
+            )
     return classes
 
 
+def _dither_red(red_coverage: list[float], dither_strength: float) -> list[bool]:
+    values = [coverage * 255.0 for coverage in red_coverage]
+    support = [coverage > 0.0 for coverage in red_coverage]
+    selected = [False] * (WIDTH * HEIGHT)
+
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            index = y * WIDTH + x
+            if not support[index]:
+                continue
+
+            old_value = max(0.0, min(255.0, values[index]))
+            new_value = 255.0 if old_value >= 128.0 else 0.0
+            selected[index] = new_value == 255.0
+            error = (old_value - new_value) * dither_strength
+            if error == 0.0:
+                continue
+            _diffuse(values, support, x + 1, y, error * 7.0 / 16.0)
+            _diffuse(values, support, x - 1, y + 1, error * 3.0 / 16.0)
+            _diffuse(values, support, x, y + 1, error * 5.0 / 16.0)
+            _diffuse(values, support, x + 1, y + 1, error * 1.0 / 16.0)
+    return selected
+
+
 def _diffuse(
-    luminance: list[float],
-    red_mask: list[bool],
+    values: list[float],
+    excluded_or_supported: list[bool],
     x: int,
     y: int,
     error: float,
+    *,
+    diffuse_when: bool = True,
 ) -> None:
     if x < 0 or x >= WIDTH or y < 0 or y >= HEIGHT:
         return
     index = y * WIDTH + x
-    if not red_mask[index]:
-        luminance[index] += error
+    if excluded_or_supported[index] == diffuse_when:
+        values[index] += error
 
 
 def _pack_planes(
@@ -235,4 +303,3 @@ def _make_preview(classes: bytearray) -> bytes:
     output.name = "preview.png"
     preview.save(output, format="PNG", optimize=True)
     return output.getvalue()
-

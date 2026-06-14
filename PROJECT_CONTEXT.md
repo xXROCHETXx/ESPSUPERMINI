@@ -161,7 +161,10 @@ El conversor es propio y no depende de OpenCV ni NumPy:
 - Filtro mediano para fotografias.
 - Unsharp mask para texto/logos.
 - Ajustes de brillo y contraste.
-- Deteccion de rojo usando hue HSV, saturacion, luminosidad y dominancia RGB.
+- Deteccion selectiva de rojo usando hue HSV, saturacion, luminosidad y croma.
+- El croma se convierte en cobertura de tinta con Floyd-Steinberg para simular
+  tonos mediante patrones rojo/blanco o rojo/negro; el panel sigue siendo BWR.
+- El rango de hue rojo se mantiene estrecho para no inundar madera y piel.
 - La mascara roja se aplica realmente al resultado.
 - Se eliminan puntos rojos completamente aislados.
 - Los pixeles rojos se excluyen del dithering blanco/negro.

@@ -81,6 +81,21 @@ def test_red_sensitivity_changes_muted_red_result() -> None:
     assert high.red_pixels > low.red_pixels
 
 
+def test_warm_wood_and_skin_tones_do_not_flood_red() -> None:
+    source = Image.new("RGB", (WIDTH, HEIGHT), (175, 95, 45))
+    result = process_image(source, EditState.defaults(Preset.PHOTO_BWR))
+
+    assert result.red_pixels < WIDTH * HEIGHT * 0.01
+
+
+def test_dark_red_uses_red_and_black_as_a_visual_shade() -> None:
+    source = Image.new("RGB", (WIDTH, HEIGHT), (105, 8, 8))
+    result = process_image(source, EditState.defaults(Preset.PHOTO_BWR))
+
+    assert WIDTH * HEIGHT * 0.25 < result.red_pixels < WIDTH * HEIGHT * 0.75
+    assert result.black_pixels > WIDTH * HEIGHT * 0.20
+
+
 def test_exif_orientation_is_applied() -> None:
     source = Image.new("RGB", (40, 20), "white")
     exif = Image.Exif()
