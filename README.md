@@ -69,6 +69,15 @@ long polling. En Render se puede crear el servicio desde `render.yaml`.
 Configura GitHub Pages para publicar desde la carpeta `/docs` de la rama
 seleccionada. La imagen e-ink sera publica para quien conozca la URL.
 
+Repositorio:
+https://github.com/xXROCHETXx/ESPSUPERMINI
+
+GitHub Pages:
+https://xxrochetxx.github.io/ESPSUPERMINI/
+
+Archivo que publicara el bot:
+https://xxrochetxx.github.io/ESPSUPERMINI/display/22a7a15a92a99aae4446f9d62b5f57dd/current.epd
+
 ## Formato EPD1
 
 `current.epd` usa una cabecera little-endian de 24 bytes:

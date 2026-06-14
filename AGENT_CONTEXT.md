@@ -62,6 +62,8 @@ fisicamente y no corregirse en el bot hasta observar el panel real.
 
 - `current.epd` se sirve desde GitHub Pages en
   `docs/display/22a7a15a92a99aae4446f9d62b5f57dd/current.epd`.
+- Repositorio remoto: `https://github.com/xXROCHETXx/ESPSUPERMINI`.
+- Pages: `https://xxrochetxx.github.io/ESPSUPERMINI/`.
 - El firmware usa TLS sin validar CA porque en el primer arranque aun no conoce
   la hora. CRC protege integridad accidental, no autenticidad.
 - La ruta publica debe ser dificil de adivinar.
@@ -99,6 +101,9 @@ pixel, mientras el firmware asociado recibe 1 bit por pixel.
 - GitHub Pages puede entregar temporalmente la version anterior tras publicar.
   Esto es aceptable.
 - Render y GitHub pueden cambiar sus planes gratuitos.
+- GitHub Actions esta bloqueado actualmente por un problema de facturacion de
+  la cuenta. Pages y Contents API siguen funcionando; las pruebas se ejecutaron
+  localmente y el workflow permanece disponible para reactivarlo.
 - TLS sin CA permite un atacante de red activo; CRC no evita manipulacion.
 - El panel BWR probablemente usa tiempos de refresco similares incluso en BW;
   BW ahorra descarga y RAM, no necesariamente energia del panel.

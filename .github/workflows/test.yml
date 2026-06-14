@@ -2,7 +2,12 @@ name: test
 
 on:
   push:
+    paths-ignore:
+      - "docs/display/**"
   pull_request:
+    paths-ignore:
+      - "docs/display/**"
+  workflow_dispatch:
 
 jobs:
   python:

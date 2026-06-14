@@ -87,6 +87,14 @@ Arquitectura:
 - Sin base de datos.
 - Solo Telegram user IDs autorizados pueden preparar o publicar imagenes.
 
+Recursos creados:
+
+- Repositorio: `https://github.com/xXROCHETXx/ESPSUPERMINI`.
+- Pages: `https://xxrochetxx.github.io/ESPSUPERMINI/`.
+- Bitmap:
+  `https://xxrochetxx.github.io/ESPSUPERMINI/display/22a7a15a92a99aae4446f9d62b5f57dd/current.epd`.
+- Telegram user ID autorizado: `1815804105`.
+
 Render puede suspender el bot, pero esto no afecta al ESP: la conversion se hace
 al pulsar `Publicar`, normalmente horas antes del ciclo diario. El ESP descarga
 el archivo estatico de GitHub Pages y nunca despierta al bot.
