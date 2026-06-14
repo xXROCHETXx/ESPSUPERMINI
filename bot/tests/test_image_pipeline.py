@@ -1,9 +1,9 @@
 from io import BytesIO
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from bot.epd_format import HEIGHT, PLANE_SIZE, WIDTH, Mode, parse_epd
-from bot.image_pipeline import crop_box, load_source, process_image
+from bot.image_pipeline import _apply_filters, crop_box, load_source, process_image
 from bot.state import EditState, Preset
 
 
@@ -104,6 +104,36 @@ def test_neutral_gray_does_not_need_red_ink() -> None:
     assert result.red_pixels < WIDTH * HEIGHT * 0.01
 
 
+def test_sharpness_increases_local_edge_contrast() -> None:
+    source = Image.new("RGB", (WIDTH, HEIGHT), (70, 70, 70))
+    for x in range(WIDTH // 2, WIDTH):
+        for y in range(HEIGHT):
+            source.putpixel((x, y), (185, 185, 185))
+    source = source.filter(ImageFilter.GaussianBlur(radius=3))
+
+    soft = _apply_filters(
+        source,
+        EditState(preset=Preset.PHOTO_BWR, contrast=0, sharpness=0),
+    ).convert("L")
+    sharp = _apply_filters(
+        source,
+        EditState(preset=Preset.PHOTO_BWR, contrast=0, sharpness=10),
+    ).convert("L")
+    y = HEIGHT // 2
+    start = WIDTH // 2 - 7
+    stop = WIDTH // 2 + 8
+    soft_profile = [soft.getpixel((x, y)) for x in range(start, stop)]
+    sharp_profile = [sharp.getpixel((x, y)) for x in range(start, stop)]
+    soft_slope = max(
+        soft_profile[index + 1] - soft_profile[index]
+        for index in range(len(soft_profile) - 1)
+    )
+    sharp_slope = max(
+        sharp_profile[index + 1] - sharp_profile[index]
+        for index in range(len(sharp_profile) - 1)
+    )
+
+    assert sharp_slope > soft_slope
 def test_exif_orientation_is_applied() -> None:
     source = Image.new("RGB", (40, 20), "white")
     exif = Image.Exif()

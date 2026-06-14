@@ -184,6 +184,8 @@ async def handle_callback(
             Action.DITHER_DOWN,
             Action.RED_UP,
             Action.RED_DOWN,
+            Action.SHARPNESS_UP,
+            Action.SHARPNESS_DOWN,
             Action.RESET_TONE,
         }:
             keyboard = _tone_keyboard(updated_state)
@@ -305,6 +307,10 @@ def _tone_keyboard(state: EditState) -> InlineKeyboardMarkup:
             _button("Menos trama", Action.DITHER_DOWN, state),
             _button("Mas trama", Action.DITHER_UP, state),
         ],
+        [
+            _button("Menos nitidez", Action.SHARPNESS_DOWN, state),
+            _button("Mas nitidez", Action.SHARPNESS_UP, state),
+        ],
     ]
     if state.preset != Preset.PHOTO_BW:
         rows.append(
@@ -338,7 +344,7 @@ def _caption(state: EditState, processed: ProcessedImage) -> str:
         f"Estilo: {style}\n"
         f"Recorte: zoom {state.zoom}/10, X {state.pan_x:+d}, Y {state.pan_y:+d}\n"
         f"Brillo: {state.brightness:+d}, contraste: {state.contrast:+d}\n"
-        f"Trama: {state.dither}/10\n"
+        f"Trama: {state.dither}/10, nitidez: {state.sharpness}/10\n"
         f"{red_line}"
         f"Negro: {processed.black_pixels} pixeles"
     )

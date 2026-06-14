@@ -15,7 +15,7 @@ del proyecto y [AGENT_CONTEXT.md](AGENT_CONTEXT.md) antes de modificar codigo.
 
 1. El usuario envia una foto al bot.
 2. El bot corrige EXIF, recorta sin deformar y genera una previsualizacion.
-3. El usuario ajusta estilo, recorte, brillo, contraste, trama y rojo.
+3. El usuario ajusta estilo, recorte, brillo, contraste, trama, nitidez y rojo.
 4. `Publicar` crea `current.epd` y lo guarda mediante GitHub Contents API.
 5. El ESP despierta, conecta al WiFi durante un maximo de 10 segundos y consulta
    el archivo.

@@ -41,9 +41,12 @@ class Action(IntEnum):
     RED_UP = 36
     RED_DOWN = 37
     RESET_TONE = 38
+    SHARPNESS_UP = 39
+    SHARPNESS_DOWN = 40
 
 
-_CODEC = struct.Struct(">BBBBbbbbBB")
+_CODEC_V1 = struct.Struct(">BBBBbbbbBB")
+_CODEC_V2 = struct.Struct(">BBBBbbbbBBB")
 _PREFIX = "e1"
 
 
@@ -57,13 +60,20 @@ class EditState:
     contrast: int = 1
     dither: int = 8
     red_sensitivity: int = 5
+    sharpness: int = 0
 
     @classmethod
     def defaults(cls, preset: Preset) -> "EditState":
         if preset == Preset.PHOTO_BW:
             return cls(preset=preset, contrast=1, dither=8, red_sensitivity=0)
         if preset == Preset.TEXT_LOGO:
-            return cls(preset=preset, contrast=4, dither=0, red_sensitivity=6)
+            return cls(
+                preset=preset,
+                contrast=4,
+                dither=0,
+                red_sensitivity=6,
+                sharpness=7,
+            )
         return cls(preset=preset, contrast=0, dither=10, red_sensitivity=5)
 
     def with_preset(self, preset: Preset) -> "EditState":
@@ -89,13 +99,14 @@ class EditState:
             contrast=max(-5, min(8, int(self.contrast))),
             dither=max(0, min(10, int(self.dither))),
             red_sensitivity=max(0, min(10, int(self.red_sensitivity))),
+            sharpness=max(0, min(10, int(self.sharpness))),
         )
 
 
 def encode_callback(action: Action, state: EditState) -> str:
     state = state.validated()
-    raw = _CODEC.pack(
-        1,
+    raw = _CODEC_V2.pack(
+        2,
         int(action),
         int(state.preset),
         state.zoom,
@@ -105,6 +116,7 @@ def encode_callback(action: Action, state: EditState) -> str:
         state.contrast,
         state.dither,
         state.red_sensitivity,
+        state.sharpness,
     )
     encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
     value = _PREFIX + encoded
@@ -119,21 +131,37 @@ def decode_callback(value: str) -> tuple[Action, EditState]:
     encoded = value[len(_PREFIX) :]
     encoded += "=" * (-len(encoded) % 4)
     raw = base64.urlsafe_b64decode(encoded)
-    if len(raw) != _CODEC.size:
+    if len(raw) == _CODEC_V1.size:
+        (
+            version,
+            action,
+            preset,
+            zoom,
+            pan_x,
+            pan_y,
+            brightness,
+            contrast,
+            dither,
+            red_sensitivity,
+        ) = _CODEC_V1.unpack(raw)
+        sharpness = 0
+    elif len(raw) == _CODEC_V2.size:
+        (
+            version,
+            action,
+            preset,
+            zoom,
+            pan_x,
+            pan_y,
+            brightness,
+            contrast,
+            dither,
+            red_sensitivity,
+            sharpness,
+        ) = _CODEC_V2.unpack(raw)
+    else:
         raise ValueError("Invalid callback state length")
-    (
-        version,
-        action,
-        preset,
-        zoom,
-        pan_x,
-        pan_y,
-        brightness,
-        contrast,
-        dither,
-        red_sensitivity,
-    ) = _CODEC.unpack(raw)
-    if version != 1:
+    if version not in (1, 2):
         raise ValueError("Unsupported callback state version")
     state = EditState(
         preset=Preset(preset),
@@ -144,6 +172,7 @@ def decode_callback(value: str) -> tuple[Action, EditState]:
         contrast=contrast,
         dither=dither,
         red_sensitivity=red_sensitivity,
+        sharpness=sharpness,
     ).validated()
     return Action(action), state
 
@@ -185,6 +214,10 @@ def apply_action(action: Action, state: EditState) -> EditState:
         return replace(state, red_sensitivity=state.red_sensitivity + 1).validated()
     if action == Action.RED_DOWN:
         return replace(state, red_sensitivity=state.red_sensitivity - 1).validated()
+    if action == Action.SHARPNESS_UP:
+        return replace(state, sharpness=state.sharpness + 1).validated()
+    if action == Action.SHARPNESS_DOWN:
+        return replace(state, sharpness=state.sharpness - 1).validated()
     if action == Action.RESET_TONE:
         return state.reset_tone()
     return state

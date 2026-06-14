@@ -100,8 +100,15 @@ def _crop_and_resize(source: Image.Image, state: EditState) -> Image.Image:
 def _apply_filters(image: Image.Image, state: EditState) -> Image.Image:
     if state.preset in (Preset.PHOTO_BWR, Preset.PHOTO_BW):
         image = image.filter(ImageFilter.MedianFilter(size=3))
-    else:
-        image = image.filter(ImageFilter.UnsharpMask(radius=1.2, percent=180, threshold=2))
+
+    if state.sharpness > 0:
+        image = image.filter(
+            ImageFilter.UnsharpMask(
+                radius=1.2,
+                percent=state.sharpness * 30,
+                threshold=0,
+            )
+        )
 
     brightness_factor = 2.0 ** (state.brightness / 5.0)
     contrast_factor = 2.0 ** (state.contrast / 4.0)

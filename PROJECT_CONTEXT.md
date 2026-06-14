@@ -146,6 +146,7 @@ Ajustes:
 - Contraste.
 - Intensidad de trama/dithering.
 - Sensibilidad al rojo.
+- Nitidez de 0 a 10.
 - Restablecer valores del preset.
 
 El estado completo cabe en menos de 64 bytes y se codifica dentro de cada
@@ -159,7 +160,7 @@ El conversor es propio y no depende de OpenCV ni NumPy:
 - Pillow corrige EXIF y aplana transparencias sobre blanco.
 - Crop tipo cover conserva el aspect ratio.
 - Filtro mediano para fotografias.
-- Unsharp mask para texto/logos.
+- Unsharp mask ajustable despues de reducir ruido y antes del dithering.
 - Ajustes de brillo y contraste.
 - Las fotos BWR usan cuantizacion RGB vectorial con paleta blanco/negro/rojo y
   difusion Floyd-Steinberg por canal, siguiendo la intencion visual de Lory.
@@ -169,9 +170,6 @@ El conversor es propio y no depende de OpenCV ni NumPy:
   nivel 5 reproduce la seleccion por distancia RGB sin sesgo.
 - El preset Foto BWR parte con contraste 0, dithering 10 y rojo 5 para imitar
   los valores efectivos predeterminados de la app de escritorio.
-- La mascara roja se aplica realmente al resultado.
-- Se eliminan puntos rojos completamente aislados.
-- Los pixeles rojos se excluyen del dithering blanco/negro.
 - Floyd-Steinberg para fotos.
 - Umbral fijo para texto/logo.
 - Nunca se permite que un pixel sea negro y rojo simultaneamente.
