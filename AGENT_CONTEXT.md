@@ -53,7 +53,9 @@ Firmware de prueba disponible:
 - Archivo `src/server_epaper_test.cpp`.
 - No usa deep sleep ni NVS; descarga `current.epd`, valida `EPD1` y refresca
   una vez.
-- Pines del test: MOSI 11, SCK 12, BUSY 4, DC 5, RST 6, CS 8.
+- Para ESP32-WROOM-32 clasico. Pines del test: MOSI 23, SCK 18, BUSY 27,
+  DC 26, RST 25, CS 32.
+- Evitar GPIO6-11 en ESP32-WROOM-32: estan conectados a la flash interna.
 
 La orientacion del framebuffer es landscape 296x152. Debe verificarse
 fisicamente y no corregirse en el bot hasta observar el panel real.

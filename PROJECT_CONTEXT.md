@@ -280,7 +280,7 @@ Implementado en el workspace:
 - Parser C++ `EPD1`.
 - Firmware de ciclo diario.
 - Firmware de prueba `epaper-server-test` sin deep sleep para validar descarga
-  desde Pages y refresco de e-paper.
+  desde Pages y refresco de e-paper en ESP32-WROOM-32.
 - Bot Telegram.
 - Conversor Pillow.
 - Publicador GitHub.

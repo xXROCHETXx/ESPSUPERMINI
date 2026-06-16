@@ -15,12 +15,12 @@
 
 namespace {
 
-constexpr uint8_t pinMosi = 11;
-constexpr uint8_t pinSck = 12;
-constexpr uint8_t pinBusy = 4;
-constexpr uint8_t pinDc = 5;
-constexpr uint8_t pinReset = 6;
-constexpr uint8_t pinPanelCs = 8;
+constexpr uint8_t pinMosi = 23;
+constexpr uint8_t pinSck = 18;
+constexpr uint8_t pinBusy = 27;
+constexpr uint8_t pinDc = 26;
+constexpr uint8_t pinReset = 25;
+constexpr uint8_t pinPanelCs = 32;
 
 const pins_t displayPins = {
     pinBusy,
@@ -151,8 +151,8 @@ bool planePixelIsActive(const uint8_t* plane, uint16_t x, uint16_t y) {
 bool drawImage(const epd::ImageView& image) {
     Serial.println("Initialising display");
 
-    // Arduino ESP32-S3 defaults are normally MOSI=11 and SCK=12. This explicit
-    // call documents the wiring used for this smoke test.
+    // ESP32-WROOM-32 VSPI defaults are MOSI=23 and SCK=18. This explicit call
+    // documents the wiring used for this smoke test.
     SPI.begin(pinSck, -1, pinMosi, pinPanelCs);
 
     Screen_EPD_EXT3 screen(eScreen_EPD_266_JS_0C, displayPins);
