@@ -279,6 +279,8 @@ Implementado en el workspace:
 - Proyecto PlatformIO.
 - Parser C++ `EPD1`.
 - Firmware de ciclo diario.
+- Firmware de prueba `epaper-server-test` sin deep sleep para validar descarga
+  desde Pages y refresco de e-paper.
 - Bot Telegram.
 - Conversor Pillow.
 - Publicador GitHub.

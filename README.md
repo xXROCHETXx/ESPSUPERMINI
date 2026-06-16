@@ -36,6 +36,18 @@ pio run --target upload
 pio device monitor
 ```
 
+Para probar solo la ruta servidor -> e-paper, sin deep sleep ni optimizaciones:
+
+```powershell
+pio run -e epaper-server-test
+pio run -e epaper-server-test --target upload
+pio device monitor -e epaper-server-test
+```
+
+Ese firmware de prueba descarga `current.epd`, valida `EPD1` y refresca la
+pantalla una sola vez. Usa el cableado MOSI=GPIO11, SCK=GPIO12, BUSY=GPIO4,
+DC=GPIO5, RST=GPIO6 y CS=GPIO8.
+
 La configuracion usa `esp32-s3-devkitc-1` como base para la Super Mini y fija
 `PDLS_EXT3_Basic_Global` en la version 8.2.0.
 

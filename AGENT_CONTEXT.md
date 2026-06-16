@@ -47,6 +47,14 @@ Mantener ambos sincronizados y ampliar las pruebas si cambia.
 - Libreria: `PDLS_EXT3_Basic_Global` 8.2.0.
 - No usar `boardESP32DevKitC`.
 
+Firmware de prueba disponible:
+
+- Entorno PlatformIO `epaper-server-test`.
+- Archivo `src/server_epaper_test.cpp`.
+- No usa deep sleep ni NVS; descarga `current.epd`, valida `EPD1` y refresca
+  una vez.
+- Pines del test: MOSI 11, SCK 12, BUSY 4, DC 5, RST 6, CS 8.
+
 La orientacion del framebuffer es landscape 296x152. Debe verificarse
 fisicamente y no corregirse en el bot hasta observar el panel real.
 
