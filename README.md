@@ -1,7 +1,7 @@
 # ESP32-S3 Super Mini e-paper
 
 Sistema de bajo consumo para actualizar una pantalla e-ink Pervasive Displays
-2.66" (296x152, blanco/negro/rojo) una vez al dia.
+4.17" (400x300, blanco/negro/rojo) una vez al dia.
 
 El proyecto tiene dos componentes:
 
@@ -102,14 +102,14 @@ https://xxrochetxx.github.io/ESPSUPERMINI/display/22a7a15a92a99aae4446f9d62b5f57
 | 5 | `uint8` | Modo: 1 BW, 2 BWR |
 | 6 | `uint8` | Tamano de cabecera, 24 |
 | 7 | `uint8` | Flags, actualmente 0 |
-| 8 | `uint16` | Ancho, 296 |
-| 10 | `uint16` | Alto, 152 |
-| 12 | `uint16` | Bytes por fila, 37 |
+| 8 | `uint16` | Ancho, 400 |
+| 10 | `uint16` | Alto, 300 |
+| 12 | `uint16` | Bytes por fila, 50 |
 | 14 | `uint16` | Longitud del payload |
 | 16 | `uint32` | Unix timestamp de publicacion |
 | 20 | `uint32` | CRC32 del payload |
 
-Cada plano ocupa 5.624 bytes. Las filas usan MSB primero y un bit `0` activa
+Cada plano ocupa 15.000 bytes. Las filas usan MSB primero y un bit `0` activa
 el color. BW contiene solo negro; BWR contiene primero negro y despues rojo.
 
 ## Seguridad de energia

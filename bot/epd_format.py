@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 
-WIDTH = 296
-HEIGHT = 152
-BYTES_PER_ROW = 37
+WIDTH = 400
+HEIGHT = 300
+BYTES_PER_ROW = 50
 PLANE_SIZE = BYTES_PER_ROW * HEIGHT
 HEADER_SIZE = 24
 _HEADER = struct.Struct("<4sBBBBHHHHII")
@@ -113,4 +113,3 @@ def _validate_no_overlap(black_plane: bytes, red_plane: bytes) -> None:
     for black, red in zip(black_plane, red_plane, strict=True):
         if ((~black) & 0xFF) & ((~red) & 0xFF):
             raise ValueError("A pixel cannot be black and red simultaneously")
-

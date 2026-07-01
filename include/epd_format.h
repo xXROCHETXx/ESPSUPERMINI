@@ -6,9 +6,9 @@
 namespace epd {
 
 constexpr size_t headerSize = 24;
-constexpr uint16_t width = 296;
-constexpr uint16_t height = 152;
-constexpr uint16_t bytesPerRow = 37;
+constexpr uint16_t width = 400;
+constexpr uint16_t height = 300;
+constexpr uint16_t bytesPerRow = 50;
 constexpr uint16_t planeSize = bytesPerRow * height;
 constexpr size_t maxFileSize = headerSize + planeSize * 2;
 
@@ -46,4 +46,3 @@ bool parse(const uint8_t* data, size_t length, ImageView& image, ParseError& err
 const char* errorText(ParseError error);
 
 }  // namespace epd
-

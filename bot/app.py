@@ -24,6 +24,7 @@ from telegram.ext import (
 )
 
 from .github_store import GitHubConfig, GitHubStore
+from .epd_format import HEIGHT, WIDTH
 from .image_pipeline import ProcessedImage, load_source, process_image
 from .manual_values import (
     ManualSession,
@@ -87,7 +88,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     await message.reply_text(
         "Enviame una foto. Preparare una vista previa exacta para la pantalla "
-        "296x152 y podras ajustar estilo, recorte, luz y color antes de publicar."
+        f"{WIDTH}x{HEIGHT} y podras ajustar estilo, recorte, luz y color antes de publicar."
     )
 
 
@@ -496,7 +497,7 @@ def _caption(state: EditState, processed: ProcessedImage) -> str:
         else "Rojo: desactivado\n"
     )
     return (
-        f"Vista previa 296x152\n"
+        f"Vista previa {WIDTH}x{HEIGHT}\n"
         f"Estilo: {style}\n"
         f"Recorte: zoom {state.zoom}/10, X {state.pan_x:+d}, Y {state.pan_y:+d}\n"
         f"Brillo: {state.brightness:+d}, contraste: {state.contrast:+d}\n"

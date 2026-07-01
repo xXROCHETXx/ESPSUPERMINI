@@ -43,7 +43,7 @@ const pins_t displayPins = {
     config::pinBusy,
     config::pinDc,
     config::pinReset,
-    config::pinFlashCs,
+    NOT_CONNECTED,
     config::pinPanelCs,
     NOT_CONNECTED,
     NOT_CONNECTED,
@@ -59,6 +59,33 @@ CycleMetrics metrics;
 bool watchdogInitialisedHere = false;
 
 void enterDeepSleep(uint64_t seconds);
+
+const char* resetReasonText(esp_reset_reason_t reason) {
+    switch (reason) {
+        case ESP_RST_POWERON:
+            return "power-on";
+        case ESP_RST_EXT:
+            return "external reset";
+        case ESP_RST_SW:
+            return "software reset";
+        case ESP_RST_PANIC:
+            return "panic";
+        case ESP_RST_INT_WDT:
+            return "interrupt watchdog";
+        case ESP_RST_TASK_WDT:
+            return "task watchdog";
+        case ESP_RST_WDT:
+            return "other watchdog";
+        case ESP_RST_DEEPSLEEP:
+            return "deep sleep wake";
+        case ESP_RST_BROWNOUT:
+            return "brownout";
+        case ESP_RST_SDIO:
+            return "sdio";
+        default:
+            return "unknown";
+    }
+}
 
 bool credentialsConfigured() {
     return strcmp(WIFI_SSID, "YOUR_WIFI_NAME") != 0 &&
@@ -271,9 +298,11 @@ bool planePixelIsActive(const uint8_t* plane, uint16_t x, uint16_t y) {
 
 bool updateDisplay(const epd::ImageView& image) {
     const uint32_t startedAt = millis();
-    Screen_EPD_EXT3 screen(eScreen_EPD_266_JS_0C, displayPins);
+    SPI.begin(config::pinSck, -1, config::pinMosi, config::pinPanelCs);
+
+    Screen_EPD_EXT3 screen(eScreen_EPD_417_JS_0D, displayPins);
     screen.begin();
-    screen.setOrientation(ORIENTATION_LANDSCAPE);
+    screen.setOrientation(config::displayOrientation);
 
     if (screen.screenSizeX() != epd::width ||
         screen.screenSizeY() != epd::height) {
@@ -305,7 +334,6 @@ bool updateDisplay(const epd::ImageView& image) {
                   static_cast<unsigned long>(metrics.displayMs));
 
     digitalWrite(config::pinPanelCs, HIGH);
-    digitalWrite(config::pinFlashCs, HIGH);
     digitalWrite(config::pinDc, LOW);
     digitalWrite(config::pinReset, LOW);
     SPI.end();
@@ -364,6 +392,13 @@ void enterDeepSleep(uint64_t seconds) {
     Serial.printf("Deep sleep for %llu seconds\n",
                   static_cast<unsigned long long>(seconds));
     Serial.flush();
+    if (config::debugStayAwakeInsteadOfSleep) {
+        Serial.println("DEBUG: deep sleep skipped; staying awake for serial diagnostics.");
+        Serial.flush();
+        while (true) {
+            delay(1000);
+        }
+    }
     esp_sleep_enable_timer_wakeup(seconds * 1000000ULL);
     esp_deep_sleep_start();
 }
@@ -373,8 +408,18 @@ void enterDeepSleep(uint64_t seconds) {
 void setup() {
     metrics.startedAt = millis();
     Serial.begin(115200);
-    delay(50);
+    delay(2000);
     Serial.println("\nESP32-S3 e-paper daily cycle");
+    const esp_reset_reason_t reason = esp_reset_reason();
+    Serial.printf("Reset reason: %d (%s)\n", reason, resetReasonText(reason));
+    Serial.printf("Flash chip: %lu bytes\n",
+                  static_cast<unsigned long>(ESP.getFlashChipSize()));
+    Serial.printf("PSRAM: %lu bytes\n",
+                  static_cast<unsigned long>(ESP.getPsramSize()));
+    Serial.printf("Firmware expects display %ux%u, row=%u bytes\n",
+                  epd::width,
+                  epd::height,
+                  epd::bytesPerRow);
 
     setenv("TZ", config::chileTimezone, 1);
     tzset();

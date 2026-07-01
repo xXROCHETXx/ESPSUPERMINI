@@ -7,7 +7,7 @@ Leer `PROJECT_CONTEXT.md` y este archivo antes de modificar el proyecto.
 - El objetivo principal es evitar consumo indefinido.
 - Toda ruta del firmware debe terminar en deep sleep.
 - WiFi tiene timeout absoluto de 10 segundos.
-- La descarga tiene timeout de 15 segundos y tamano maximo de 11.272 bytes.
+- La descarga tiene timeout de 15 segundos y tamano maximo de 30.024 bytes.
 - Nunca inicializar ni refrescar la e-ink con datos no validados.
 - Apagar WiFi antes de preparar/refrescar la pantalla.
 - No interrumpir un `flush()` normal.
@@ -22,9 +22,9 @@ Leer `PROJECT_CONTEXT.md` y este archivo antes de modificar el proyecto.
 - Magic: `EPD1`.
 - Version: 1.
 - Cabecera: 24 bytes little-endian.
-- Resolucion unica: 296x152.
-- Stride: 37 bytes.
-- Plano: 5.624 bytes.
+- Resolucion unica: 400x300.
+- Stride: 50 bytes.
+- Plano: 15.000 bytes.
 - Modo 1 BW: un plano.
 - Modo 2 BWR: negro seguido de rojo.
 - Bit 0 activa color, MSB primero.
@@ -41,9 +41,10 @@ Mantener ambos sincronizados y ampliar las pruebas si cambia.
 ## Hardware provisional
 
 - ESP32-S3 Super Mini representada por `esp32-s3-devkitc-1`.
-- SPI del variant: MOSI 11, SCK 12, MISO 13.
-- Control: BUSY 4, DC 5, RESET 6, FLASH_CS 7, PANEL_CS 8.
-- Pantalla: `eScreen_EPD_266_JS_0C`.
+- SPI: MOSI 11, SCK 12. MISO no se usa.
+- Control: BUSY 4, DC 5, RESET 6, PANEL_CS 8.
+- Pantalla: `eScreen_EPD_417_JS_0D`, resolucion 400x300, orientacion 0.
+- La Super Mini detectada tiene flash de 4 MB; PlatformIO fuerza `board_build.flash_size = 4MB`.
 - Libreria: `PDLS_EXT3_Basic_Global` 8.2.0.
 - No usar `boardESP32DevKitC`.
 
@@ -57,8 +58,8 @@ Firmware de prueba disponible:
   DC 26, RST 25, CS 32.
 - Evitar GPIO6-11 en ESP32-WROOM-32: estan conectados a la flash interna.
 
-La orientacion del framebuffer es landscape 296x152. Debe verificarse
-fisicamente y no corregirse en el bot hasta observar el panel real.
+La orientacion del framebuffer para 4.17 es 0, siguiendo el firmware de Lory.
+Debe verificarse fisicamente antes de corregir rotaciones en el bot.
 
 ## Tiempo
 
@@ -137,9 +138,10 @@ pixel, mientras el firmware asociado recibe 1 bit por pixel.
 
 - Telegram y Render estan activos; webhook sin errores.
 - GitHub Pages esta activo.
-- Primera publicacion validada en commit `de4cff0`: `current.epd` responde 200,
-  mide 11.272 bytes y pasa parser/CRC como BWR.
-- Falta `include/secrets.h`; no contiene secretos en el repositorio.
+- Primera publicacion 2.66 validada en commit `de4cff0`: `current.epd`
+  respondia 200, media 11.272 bytes y pasaba parser/CRC como BWR.
+- El formato actual 4.17 debe publicar 30.024 bytes en modo BWR.
+- `include/secrets.h` existe solo localmente y no debe subirse al repositorio.
 - Firmware compila localmente y las pruebas Python pasan.
 
 ## Proxima sesion recomendada

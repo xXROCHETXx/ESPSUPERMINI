@@ -5,7 +5,7 @@ from io import BytesIO
 
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
-from .epd_format import HEIGHT, PLANE_SIZE, WIDTH, build_epd
+from .epd_format import BYTES_PER_ROW, HEIGHT, PLANE_SIZE, WIDTH, build_epd
 from .state import EditState, Preset
 
 
@@ -245,7 +245,7 @@ def _pack_planes(
     red_pixels = 0
 
     for y in range(HEIGHT):
-        row_offset = y * 37
+        row_offset = y * BYTES_PER_ROW
         for x in range(WIDTH):
             colour = classes[y * WIDTH + x]
             byte_index = row_offset + x // 8

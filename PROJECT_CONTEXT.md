@@ -28,8 +28,8 @@ y consumo real se documentan, pero se depuraran mas adelante con la placa.
 ## Hardware y pantalla
 
 - Placa: ESP32-S3 Super Mini.
-- Pantalla elegida: Pervasive Displays 2.66", 296x152.
-- Identificador PDLS: `eScreen_EPD_266_JS_0C`.
+- Pantalla elegida: Pervasive Displays 4.17", 400x300.
+- Identificador PDLS: `eScreen_EPD_417_JS_0D`.
 - La pelicula `J` admite blanco, negro y rojo.
 - Libreria: `PDLS_EXT3_Basic_Global` 8.2.0.
 - El mapa de GPIO es provisional.
@@ -41,7 +41,6 @@ y consumo real se documentan, pero se depuraran mas adelante con la placa.
   - BUSY GPIO4.
   - DC GPIO5.
   - RESET GPIO6.
-  - FLASH_CS GPIO7.
   - PANEL_CS GPIO8.
 
 No debe reutilizarse `boardESP32DevKitC`: usa GPIO que no corresponden a la
@@ -55,7 +54,7 @@ Super Mini. El proyecto define un `pins_t` propio.
 4. Consultar condicionalmente `current.epd` mediante ETag.
 5. Leer la cabecera HTTP `Date`; no realizar una peticion NTP adicional.
 6. Si HTTP responde 304, apagar WiFi y dormir.
-7. Si responde 200, descargar como maximo 11.272 bytes en 15 segundos.
+7. Si responde 200, descargar como maximo 30.024 bytes en 15 segundos.
 8. Validar magic, version, dimensiones, modo, longitud, CRC32 y planos.
 9. Si el CRC ya fue aplicado, guardar el ETag verificado y dormir.
 10. Apagar completamente WiFi antes de inicializar la pantalla.
@@ -106,7 +105,7 @@ al pulsar `Publicar`, normalmente horas antes del ciclo diario. El ESP descarga
 el archivo estatico de GitHub Pages y nunca despierta al bot.
 
 La imagen e-ink puede ser publica para quien conozca la URL. Se recomienda una
-ruta dificil de adivinar y no indexada. Solo se publica la version 296x152, no
+ruta dificil de adivinar y no indexada. Solo se publica la version 400x300, no
 la fotografia original.
 
 ## Experiencia de edicion
@@ -115,7 +114,7 @@ Flujo principal:
 
 1. Enviar foto o documento de imagen.
 2. Corregir orientacion EXIF.
-3. Recortar al aspect ratio 296:152 sin deformar.
+3. Recortar al aspect ratio 400:300 sin deformar.
 4. Mostrar una simulacion ampliada 4x con nearest-neighbour.
 5. Ajustar mediante botones.
 6. Publicar.
@@ -188,24 +187,24 @@ Cabecera `EPD1` little-endian de 24 bytes:
 - Modo 1=BW o 2=BWR.
 - Tamano de cabecera.
 - Flags.
-- Ancho 296.
-- Alto 152.
-- 37 bytes por fila.
+- Ancho 400.
+- Alto 300.
+- 50 bytes por fila.
 - Longitud de payload.
 - Unix timestamp.
 - CRC32 del payload.
 
 Plano BW:
 
-- 5.624 bytes.
+- 15.000 bytes.
 - MSB primero.
 - Bit `0` significa pixel negro activo.
 
 Plano BWR:
 
-- 5.624 bytes negros seguidos por 5.624 bytes rojos.
+- 15.000 bytes negros seguidos por 15.000 bytes rojos.
 - Bit `0` activa el color correspondiente.
-- Total de payload: 11.248 bytes.
+- Total de payload: 30.000 bytes.
 
 El ESP rechaza archivos truncados, con datos sobrantes, CRC incorrecto,
 dimensiones inesperadas o colores solapados. Ante cualquier problema conserva
@@ -224,7 +223,7 @@ Commit revisado:
 Hallazgos:
 
 - Confirma el uso de `Screen_EPD_EXT3`.
-- Confirma el modelo `eScreen_EPD_266_JS_0C`.
+- Confirma el modelo `eScreen_EPD_417_JS_0D` para el tamano 417.
 - `testWBR()` demuestra blanco, negro y rojo.
 - Su receptor de bitmap solo procesa un plano monocromo.
 - Espera comandos seriales y no esta orientado a deep sleep.
@@ -247,7 +246,7 @@ Ideas conservadas:
 
 Codigo no reutilizado:
 
-- Fuerza `resize(296, 152)` y deforma fotografias.
+- Fuerza `resize(...)` al tamano seleccionado y deforma fotografias.
 - Calcula una mascara HSV roja que no usa en la seleccion final.
 - Genera BWR de 2 bits por pixel, incompatible con el firmware serial.
 - El editor de dibujo reconstruye una imagen blanca al exportar.
@@ -310,10 +309,11 @@ Pendiente antes del hardware:
 - GitHub Actions sigue desactivado por el bloqueo de facturacion de la cuenta;
   las pruebas locales pasan y el firmware compila.
 
-Primera publicacion validada:
+Primera publicacion validada con la pantalla anterior 2.66:
 
 - Commit `de4cff080453ee0669e8c29cd9019374f1279ff2`.
 - GitHub Pages responde 200 con `application/octet-stream`.
 - Archivo BWR de 11.272 bytes, dos planos de 5.624 bytes y CRC32 valido.
 - El 404 observado inmediatamente despues de publicar fue temporal mientras
   Pages construia y propagaba el nuevo commit.
+- Con la pantalla actual 4.17, el archivo BWR esperado mide 30.024 bytes.

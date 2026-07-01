@@ -21,6 +21,15 @@ constexpr uint8_t pinBusy = 27;
 constexpr uint8_t pinDc = 26;
 constexpr uint8_t pinReset = 25;
 constexpr uint8_t pinPanelCs = 32;
+constexpr uint32_t pollIntervalMs = 20000;
+constexpr uint32_t heartbeatIntervalMs = 5000;
+
+bool haveLastImage = false;
+uint32_t lastPublishedAt = 0;
+uint32_t lastPayloadCrc = 0;
+uint16_t lastPayloadLength = 0;
+uint32_t nextPollAt = 0;
+uint32_t nextHeartbeatAt = 0;
 
 const pins_t displayPins = {
     pinBusy,
@@ -52,6 +61,35 @@ void printPins() {
                   pinDc,
                   pinReset,
                   pinPanelCs);
+}
+
+bool timeReached(uint32_t targetMs) {
+    return static_cast<int32_t>(millis() - targetMs) >= 0;
+}
+
+void scheduleNextPoll() {
+    nextPollAt = millis() + pollIntervalMs;
+}
+
+String cacheBustedImageUrl() {
+    String url(EPD_IMAGE_URL);
+    url += url.indexOf('?') >= 0 ? '&' : '?';
+    url += "esp_probe=";
+    url += String(millis());
+    return url;
+}
+
+void printHeartbeat() {
+    if (!timeReached(nextHeartbeatAt)) {
+        return;
+    }
+
+    const uint32_t now = millis();
+    const uint32_t remainingMs =
+        timeReached(nextPollAt) ? 0 : static_cast<uint32_t>(nextPollAt - now);
+    Serial.printf("Loop alive. Next server check in %lu s.\n",
+                  static_cast<unsigned long>((remainingMs + 999) / 1000));
+    nextHeartbeatAt = millis() + heartbeatIntervalMs;
 }
 
 bool connectWiFi() {
@@ -88,12 +126,16 @@ bool downloadImage(std::vector<uint8_t>& body) {
     http.setTimeout(config::downloadTimeoutMs);
     http.useHTTP10(true);
 
+    const String url = cacheBustedImageUrl();
     Serial.print("GET ");
-    Serial.println(EPD_IMAGE_URL);
-    if (!http.begin(client, EPD_IMAGE_URL)) {
+    Serial.println(url);
+    if (!http.begin(client, url)) {
         Serial.println("HTTP begin failed");
         return false;
     }
+
+    http.addHeader("Cache-Control", "no-cache");
+    http.addHeader("Pragma", "no-cache");
 
     const int code = http.GET();
     Serial.printf("HTTP status: %d\n", code);
@@ -155,9 +197,9 @@ bool drawImage(const epd::ImageView& image) {
     // documents the wiring used for this smoke test.
     SPI.begin(pinSck, -1, pinMosi, pinPanelCs);
 
-    Screen_EPD_EXT3 screen(eScreen_EPD_266_JS_0C, displayPins);
+    Screen_EPD_EXT3 screen(eScreen_EPD_417_JS_0D, displayPins);
     screen.begin();
-    screen.setOrientation(ORIENTATION_LANDSCAPE);
+    screen.setOrientation(config::displayOrientation);
 
     Serial.printf("Library display size: %ux%u\n",
                   screen.screenSizeX(),
@@ -194,8 +236,21 @@ bool drawImage(const epd::ImageView& image) {
     return true;
 }
 
-void runTestOnce() {
-    printPins();
+bool imageChanged(const epd::ImageView& image) {
+    return !haveLastImage ||
+           image.publishedAt != lastPublishedAt ||
+           image.payloadCrc != lastPayloadCrc ||
+           image.payloadLength != lastPayloadLength;
+}
+
+void rememberImage(const epd::ImageView& image) {
+    haveLastImage = true;
+    lastPublishedAt = image.publishedAt;
+    lastPayloadCrc = image.payloadCrc;
+    lastPayloadLength = image.payloadLength;
+}
+
+void runServerCheck(bool forceDraw) {
     if (!credentialsConfigured()) {
         Serial.println("Missing include/secrets.h WiFi credentials.");
         Serial.println("Copy include/secrets.example.h to include/secrets.h first.");
@@ -228,12 +283,20 @@ void runTestOnce() {
                   image.mode == epd::Mode::bwr ? "BWR" : "BW",
                   static_cast<unsigned long>(image.payloadCrc),
                   image.payloadLength);
+    Serial.printf("Published at: %lu\n",
+                  static_cast<unsigned long>(image.publishedAt));
+
+    if (!forceDraw && !imageChanged(image)) {
+        Serial.println("Image unchanged, skipping display refresh.");
+        return;
+    }
 
     if (!drawImage(image)) {
         Serial.println("Display update failed");
         return;
     }
 
+    rememberImage(image);
     Serial.println("Server fetch e-paper test complete.");
 }
 
@@ -242,11 +305,22 @@ void runTestOnce() {
 void setup() {
     Serial.begin(115200);
     delay(1500);
-    runTestOnce();
+    printPins();
+    Serial.printf("Polling server every %lu seconds.\n",
+                  static_cast<unsigned long>(pollIntervalMs / 1000));
+    runServerCheck(true);
+    scheduleNextPoll();
+    nextHeartbeatAt = millis() + heartbeatIntervalMs;
 }
 
 void loop() {
-    delay(1000);
+    if (timeReached(nextPollAt)) {
+        Serial.println("Checking server for a new image...");
+        runServerCheck(false);
+        scheduleNextPoll();
+    }
+    printHeartbeat();
+    delay(250);
 }
 
 #endif  // EPD_SERVER_TEST
